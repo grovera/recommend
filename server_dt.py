@@ -6,7 +6,6 @@ import json
 import requests
 
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
-import matplotlib.pyplot as plt
 
 from surprise import NormalPredictor
 from surprise import Dataset
