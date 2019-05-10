@@ -26,12 +26,6 @@ app = Flask(__name__)
 CORS(app)
 print("initiated the app! With a name of:", __name__)
 
-#our primary training data as provided
-
-
-# Load the model
-model = pickle.load(open('model_dt.pkl','rb'))
-
 @app.route('/api',methods=['GET'])
 def isActive():
     return jsonify(status="service is online", api_version="0.1")
