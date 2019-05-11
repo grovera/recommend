@@ -1,3 +1,4 @@
+import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pickle
@@ -68,40 +69,45 @@ def train_model():
 def search_guide():
     data = request.get_json(force=True)
     search_city = data['city']
+    return jsonify(get_guides(search_city))
+
+@app.route('/recommend',methods=['POST'])
+def recommend_guide():
+    data = request.get_json(force=True)
+    search_city = data['city']
     user_id = data['user']
-
-
-
-    #top3_recommendations = get_top3_recommendations(predictions)
-
-    # i=0;
-    # for User, Rating in top3_recommendations.items():
-    #     print(uid, [rid_to_name[iid] for (iid, _) in user_ratings])
-    #     i=i+1;
-    #     if(i==5):
-    #         break;
-
-
-    #accuracy.rmse(predictions)
     global algo
-    pred_test = algo.predict(user_id, 0,verbose=True)
+
+    guides = get_guides(search_city)
+    dic = {}
+    temp = []
+
+    for guide in guides:
+        dic[guide["gid"]]= guide
+        temp.append(algo.predict(user_id, guide["gid"],verbose=True))
+    temp.sort(key = lambda x: x[3], reverse = True)
+
+    final_data = []
+    for x in temp:
+        final_data.append(dic[x[1]])
+
     #pred = algo.predict(34, 32)
     #return "RMSE with KNNBasic: "+ str(pred_test[0])+'-'+str(pred_test[1])+'------'+str(pred_test[3])
-    return jsonify(search_city=search_city, predicted_rating=pred_test[3])
-
-@app.route('/test',methods=['GET'])
-def api_test():
-    #req = requests.get('https://whispering-refuge-67560.herokuapp.com/api/guides?filter={"where": {"keywords": {"fav_places": ["san_francisco"]}}}')
-    #return jsonify(req.content.decode('utf-8'))
-    return jsonify(get_guides("san_francisco"))
+    return jsonify(final_data)
 
 def get_guides(city):
     guide_list = []
     response = requests.get('https://whispering-refuge-67560.herokuapp.com/api/guides?filter={"where": {"keywords": {"fav_places": ["'+city+'"]}}}')
     data = json.loads(response.content.decode('utf-8'))
     for guide in data:
-        guide_list.append(guide["gid"])
-    #json.dumps([dict(gid=gd) for gd in data])
+        response2 = requests.get('https://whispering-refuge-67560.herokuapp.com/api/profiles/'+guide["gid"])
+        data2 = json.loads(response2.content.decode('utf-8'))
+        guide_list.append({"gid": guide["gid"], 
+                           "firstname": data2["firstname"],
+                           "lastname": data2["lastname"],
+                           "hourly_rate": guide["hourly_rate"],
+                           "rating": data2["rating"],
+                           "picture": data2["picture"]})
 
     if response.status_code == 200:
         return guide_list
