@@ -152,4 +152,4 @@ def get_top3_recommendations(predictions, topN = 3):
     return top_recs
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(port=5000, ssl_context='adhoc')
