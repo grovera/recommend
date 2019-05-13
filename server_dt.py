@@ -74,17 +74,15 @@ def train_model():
     get_all_guides()
 
 
-@app.route('/search',methods=['POST'])
+@app.route('/search',methods=['GET'])
 def search_guide():
-    data = request.get_json(force=True)
-    search_city = data['city']
+    search_city = request.args.get('city')
     return jsonify(get_guides(search_city))
 
-@app.route('/recommend',methods=['POST'])
+@app.route('/recommend',methods=['GET'])
 def recommend_guide():
-    data = request.get_json(force=True)
-    search_city = data['city']
-    user_id = data['user']
+    search_city = request.args.get('city')
+    user_id =request.args.get('user')
     global algo
 
     guides = get_guides(search_city)
