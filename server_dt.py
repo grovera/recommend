@@ -18,6 +18,8 @@ from surprise.model_selection import KFold
 from surprise.model_selection import cross_validate
 from surprise.model_selection import train_test_split
 
+from cachetools import cached, TTLCache
+
 # Input data files are available in the "../input/" directory.
 # For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
 
@@ -26,6 +28,8 @@ import os
 app = Flask(__name__)
 CORS(app)
 print("initiated the app! With a name of:", __name__)
+
+cache = TTLCache(maxsize=100, ttl=300)
 
 @app.route('/api',methods=['GET'])
 def isActive():
@@ -64,6 +68,11 @@ def train_model():
     algo.fit(trainingSet)
     return jsonify(status="training in progress")
 
+    global all_guides
+    all_guides = []
+
+    get_all_guides()
+
 
 @app.route('/search',methods=['POST'])
 def search_guide():
@@ -95,6 +104,22 @@ def recommend_guide():
     #return "RMSE with KNNBasic: "+ str(pred_test[0])+'-'+str(pred_test[1])+'------'+str(pred_test[3])
     return jsonify(final_data)
 
+def get_all_guides():
+    global all_guides
+    all_guides = []
+    response = requests.get('https://whispering-refuge-67560.herokuapp.com/api/guides')
+    data = json.loads(response.content.decode('utf-8'))
+    for guide in data:
+        response2 = requests.get('https://whispering-refuge-67560.herokuapp.com/api/profiles/'+guide["gid"])
+        data2 = json.loads(response2.content.decode('utf-8'))
+        all_guides.append({"gid": guide["gid"], 
+                           "firstname": data2["firstname"],
+                           "lastname": data2["lastname"],
+                           "hourly_rate": guide["hourly_rate"],
+                           "rating": data2["rating"],
+                           "picture": data2["picture"]})
+
+@cached(cache)
 def get_guides(city):
     guide_list = []
     response = requests.get('https://whispering-refuge-67560.herokuapp.com/api/guides?filter={"where": {"keywords": {"fav_places": ["'+city+'"]}}}')
